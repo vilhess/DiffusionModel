@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 from torchvision.utils import make_grid
@@ -165,4 +166,24 @@ class ContextDDPM(nn.Module):
         duration=2,
         loop=0 # 0 means infinite loop
         )
-       
+    
+    def save_streamlit(self, context):
+        device = self.device
+        with torch.no_grad():
+            x = torch.randn(1, 1, 28, 28).to(device)
+            c = torch.tensor(context).long().to(device)
+
+            for idx, t in enumerate(tqdm(list(range(self.n_steps))[::-1])):
+                time_tensor = (t*torch.ones((1, 1))).to(device).long()
+                eta_theta = self.backward(x, time_tensor, c)
+                alphas_t = self.alphas[t]
+                alphas_bar_t = self.alpha_bar[t]
+
+                x = (1 / alphas_t.sqrt()) * (x - (1 - alphas_t) / (1 - alphas_bar_t).sqrt() * eta_theta)
+                if t>0:
+                    z = torch.randn(1, 1, 28, 28).to(device)
+                    beta_t=self.betas[t]
+                    sigma_t=beta_t.sqrt()
+                    x = x+sigma_t*z
+                img = x.cpu().squeeze(0).permute(1, 2, 0)
+                np.save(f"streamlit_images/img_{t}.npy", img)

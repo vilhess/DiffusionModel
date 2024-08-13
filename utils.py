@@ -4,6 +4,31 @@ import torch
 from torchvision.utils import make_grid
 from PIL import Image
 
+int2class = {
+    0:"T-shirt/top",
+    1:"Trouser",
+    2:"Pullover",
+    3:"Dress",
+    4:"Coat",
+    5:"Sandal",
+    6:"Shirt",
+    7:"Sneaker",
+    8:"Bag",
+    9:"Ankle boot"
+}
+class2int = {
+    "T-shirt/top":0,
+    "Trouser":1,
+    "Pullover":2,
+    "Dress":3,
+    "Coat":4,
+    "Sandal":5,
+    "Shirt":6,
+    "Sneaker":7,
+    "Bag":8,
+    "Ankle boot":9
+}
+
 def show_images(images, title=""):
     images = [(data - torch.min(data)) / (torch.max(data) - torch.min(data)) for data in images]
     Grid = make_grid(images, nrow=5, padding=0)
