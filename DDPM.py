@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+from torchvision.utils import make_grid
+from torchvision.transforms import ToPILImage
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from utils import show_images
@@ -129,3 +131,38 @@ class ContextDDPM(nn.Module):
 
                 if t in vals:
                     show_images(x.cpu(), f"{int(t/self.n_steps * 100)}% Noisy")
+
+    def generate_gif(self):
+        device = self.device
+        with torch.no_grad():
+            x = torch.randn(20, 1, 28, 28).to(device)
+            c = torch.Tensor([0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9]).to(device).long()
+
+            frames = []
+
+            for idx, t in enumerate(tqdm(list(range(self.n_steps))[::-1])):
+                time_tensor = (t*torch.ones((20, 1))).to(device).long()
+                eta_theta = self.backward(x, time_tensor, c)
+                alphas_t = self.alphas[t]
+                alphas_bar_t = self.alpha_bar[t]
+
+                x = (1 / alphas_t.sqrt()) * (x - (1 - alphas_t) / (1 - alphas_bar_t).sqrt() * eta_theta)
+                if t>0:
+                    z = torch.randn(20, 1, 28, 28).to(device)
+                    beta_t=self.betas[t]
+                    sigma_t=beta_t.sqrt()
+                    x = x+sigma_t*z
+                if t%10==0:
+                    images = [(data - torch.min(data)) / (torch.max(data) - torch.min(data)) for data in x.cpu()]
+                    Grid = ToPILImage()(make_grid(images, nrow=5, padding=0))
+                    frames.append(Grid)
+
+
+        frames[0].save(
+        "ddpm.gif",
+        save_all=True,
+        append_images=frames[1:],
+        duration=2,
+        loop=0 # 0 means infinite loop
+        )
+       

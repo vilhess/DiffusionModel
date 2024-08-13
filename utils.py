@@ -1,22 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
+from torchvision.utils import make_grid
 from PIL import Image
 
 def show_images(images, title=""):
-    fig, axs = plt.subplots(4, 5, figsize=(10, 6))
-    for i, data in enumerate(images):
-        row = i // 5
-        col = i % 5
-        axs[row, col].imshow(data.permute(1, 2, 0), cmap="gray")
-        axs[row, col].axis('off')
-        
-        if i == 19:
-            break
-    fig.suptitle(title, fontsize=30)
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Ajuster la mise en page pour le titre
+    images = [(data - torch.min(data)) / (torch.max(data) - torch.min(data)) for data in images]
+    Grid = make_grid(images, nrow=5, padding=0)
+    plt.imshow(Grid.permute(1, 2, 0), cmap="gray") 
     plt.show()
-
 
 def show_first_batch(loader):
     for batch in loader:
